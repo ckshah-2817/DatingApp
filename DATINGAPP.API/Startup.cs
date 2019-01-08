@@ -19,6 +19,7 @@ using System.Net;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using DATINGAPP.API.Helpers;
+using AutoMapper;
 
 namespace DATINGAPP.API
 {
@@ -35,10 +36,15 @@ namespace DATINGAPP.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<DataContext>(x =>x.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+               .AddJsonOptions( opt =>{
+                    opt.SerializerSettings.ReferenceLoopHandling=Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+               });
             services.AddCors();
-    
+            services.AddAutoMapper();
+            services.AddTransient<Seed>();
             services.AddScoped<IAuthRepository,AuthRepository>();
+            services.AddScoped<IDatingRepository,DatingRepository>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                           .AddJwtBearer(options =>{
                                     options.TokenValidationParameters= new  TokenValidationParameters
@@ -53,7 +59,7 @@ namespace DATINGAPP.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env,Seed seeder)
         {
             if (env.IsDevelopment())
             {
@@ -76,6 +82,7 @@ namespace DATINGAPP.API
                 });
 
             //app.UseHttpsRedirection();
+           // seeder.SeedFeed();
             app.UseCors(x =>x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
             app.UseAuthentication();
             app.UseMvc();
